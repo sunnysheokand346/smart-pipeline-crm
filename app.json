@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Smart Pipeline CRM",
+    "slug": "Smart Pipeline CRM",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#00346a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "googleMobileAdsAppId": "ca-app-pub-3940256099942544~1458002511"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#00346a"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.snack7ad9735c20394d7c990f572e1e82e4bb",
+      "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      "expo-asset"
+    ]
+  }
+}
