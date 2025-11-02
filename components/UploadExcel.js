@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Alert, Platform, StyleSheet } from 'react-native';
-import { Button, Card, Title, Paragraph } from 'react-native-paper';
+import { View, Alert, Platform, StyleSheet, ScrollView } from 'react-native';
+import { Button, Card, Title, Paragraph, Appbar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
@@ -9,11 +9,13 @@ import * as MediaLibrary from 'expo-media-library';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
 
-export default function UploadExcel() {
+export default function UploadExcel({ navigation }) {
   const { profile } = useUser();
   const [sampleFileUri, setSampleFileUri] = useState(null);
 
-  if (!profile?.manager_id) {
+  const isManager = (profile?.role || '').trim().toLowerCase() === 'manager';
+
+  if (!profile?.manager_id && !isManager) {
     return (
       <View style={styles.centered}>
         <Paragraph style={{ marginBottom: 20, textAlign: 'center', color: 'red' }}>
@@ -64,6 +66,9 @@ export default function UploadExcel() {
   const processLeads = async (leads) => {
     console.log('🧾 Total incoming leads:', leads.length);
 
+    // Determine the manager_id to use
+    const managerIdToUse = isManager ? profile.id : profile.manager_id;
+
     // Deduplicate incoming leads by phone within uploaded data
     const seenPhones = new Set();
     const freshLeadsInternal = [];
@@ -88,7 +93,7 @@ export default function UploadExcel() {
     const { data: existingLeads, error: fetchError } = await supabase
       .from('leads')
       .select('phone')
-      .eq('manager_id', profile.manager_id);
+      .eq('manager_id', managerIdToUse);
 
     if (fetchError) {
       console.error("❌ Error fetching existing leads:", fetchError);
@@ -123,8 +128,9 @@ export default function UploadExcel() {
         return {
           ...fixed,
           custom_fields: Object.keys(custom).length > 0 ? custom : null,
-          manager_id: profile.manager_id,
-          assigned_to: null
+          manager_id: managerIdToUse,
+          assigned_to: null,
+          status: 'New'
         };
       });
 
@@ -227,43 +233,49 @@ export default function UploadExcel() {
 
   return (
     <View style={styles.container}>
-      <Title style={styles.title}>Upload Leads via Excel</Title>
-      <Paragraph style={styles.instructions}>
-        Select an Excel file (.xlsx or .xls) with your leads to upload. Duplicates within upload and existing leads will be ignored.
-      </Paragraph>
+      <Appbar.Header style={styles.appbar}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title="Upload Leads via Excel" />
+      </Appbar.Header>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContainer}>
+        <Title style={styles.title}>Upload Leads via Excel</Title>
+        <Paragraph style={styles.instructions}>
+          Select an Excel file (.xlsx or .xls) with your leads to upload. Duplicates within upload and existing leads will be ignored.
+        </Paragraph>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Button
-            mode="contained"
-            icon="file-upload"
-            onPress={pickExcel}
-            contentStyle={{ paddingVertical: 8 }}
-            style={{ marginBottom: 16 }}
-          >
-            Select Excel File to Upload
-          </Button>
+        <Card style={styles.card}>
+          <Card.Content>
+            <Button
+              mode="contained"
+              icon="file-upload"
+              onPress={pickExcel}
+              contentStyle={{ paddingVertical: 8 }}
+              style={{ marginBottom: 16 }}
+            >
+              Select Excel File to Upload
+            </Button>
 
-          <Button
-            mode="outlined"
-            icon="file-download"
-            onPress={downloadSample}
-            contentStyle={{ paddingVertical: 8 }}
-            style={{ marginBottom: 10 }}
-          >
-            Download Sample Excel File
-          </Button>
+            <Button
+              mode="outlined"
+              icon="file-download"
+              onPress={downloadSample}
+              contentStyle={{ paddingVertical: 8 }}
+              style={{ marginBottom: 10 }}
+            >
+              Download Sample Excel File
+            </Button>
 
-          <Button
-            mode="outlined"
-            icon="share"
-            onPress={shareSampleFile}
-            contentStyle={{ paddingVertical: 8 }}
-          >
-            Share Sample Excel File
-          </Button>
-        </Card.Content>
-      </Card>
+            <Button
+              mode="outlined"
+              icon="share"
+              onPress={shareSampleFile}
+              contentStyle={{ paddingVertical: 8 }}
+            >
+              Share Sample Excel File
+            </Button>
+          </Card.Content>
+        </Card>
+      </ScrollView>
     </View>
   );
 }
@@ -271,8 +283,15 @@ export default function UploadExcel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+  },
+  appbar: { backgroundColor: '#6200ee' },
+  scrollView: {
+    flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContainer: {
+    flex: 1,
+    padding: 24,
     justifyContent: 'center',
   },
   centered: {

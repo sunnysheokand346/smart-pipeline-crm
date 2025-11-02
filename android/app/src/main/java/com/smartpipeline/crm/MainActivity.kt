@@ -1,4 +1,4 @@
-package com.anonymous.snack7ad9735c20394d7c990f572e1e82e4bb
+package com.smartpipeline.crm
 
 import android.os.Build
 import android.os.Bundle

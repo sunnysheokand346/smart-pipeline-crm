@@ -32,25 +32,27 @@ export default function LeadsPool() {
   const [currentFilterType, setCurrentFilterType] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const managerId = profile?.id; // For managers, use their own id as manager_id
+
   const fetchFilterOptions = useCallback(async () => {
-    if (!profile?.manager_id) return;
+    if (!managerId) return;
     const { data, error } = await supabase
       .from('leads')
       .select('city, source, status')
-      .eq('manager_id', profile.manager_id);
-    
+      .eq('manager_id', managerId);
+
     if (!error && data) {
       const cities = [...new Set(data.map(item => item.city).filter(Boolean))].sort();
       const sources = [...new Set(data.map(item => item.source).filter(Boolean))].sort();
       const statuses = [...new Set(data.map(item => item.status).filter(Boolean))].sort();
       setFilterOptions({ cities, sources, statuses });
     }
-  }, [profile]);
+  }, [managerId]);
 
 
   const fetchUnassignedLeads = useCallback(async () => {
     setLoading(true);
-    if (!profile?.manager_id) {
+    if (!managerId) {
         setLoading(false);
         return;
     }
@@ -58,7 +60,7 @@ export default function LeadsPool() {
     let query = supabase
       .from('leads')
       .select('*')
-      .eq('manager_id', profile.manager_id)
+      .eq('manager_id', managerId)
       .is('assigned_to', null);
 
     if (filters.city) query = query.eq('city', filters.city);
@@ -69,21 +71,21 @@ export default function LeadsPool() {
 
     if (!error) setLeads(data || []);
     setLoading(false);
-  }, [profile, filters]);
+  }, [managerId, filters]);
 
 
   const fetchTelecallers = useCallback(async () => {
-    if (!profile?.manager_id) return;
+    if (!managerId) return;
     const { data, error } = await supabase
       .from('profiles')
       .select('id, name')
       .eq('role', 'telecaller')
-      .eq('manager_id', profile.manager_id);
+      .eq('manager_id', managerId);
     if (!error && data) {
       setTelecallers(data || []);
       setAvailableTelecallers(new Set((data || []).map(tc => tc.id)));
     }
-  }, [profile]);
+  }, [managerId]);
 
   useEffect(() => {
     fetchUnassignedLeads();

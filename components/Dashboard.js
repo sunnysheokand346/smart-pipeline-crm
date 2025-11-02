@@ -9,10 +9,12 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import * as Clipboard from 'expo-clipboard';
 
 export default function Dashboard() {
+  const navigation = useNavigation();
   const { profile, loading } = useUser();
   // Debug logging to help track down ReferenceError for 'teamMembers'
   try {
@@ -25,7 +27,8 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [todayLeadsCount, setTodayLeadsCount] = useState(0);
-  const [duplicateLeadsCount, setDuplicateLeadsCount] = useState(0);
+  const [pendingLeadsCount, setPendingLeadsCount] = useState(0);
+  const [pendingFollowUpCount, setPendingFollowUpCount] = useState(0);
   
 
   const normalizedRole = (profile?.role || '').trim().toLowerCase();
@@ -56,14 +59,19 @@ export default function Dashboard() {
       (data || []).filter((l) => l.created_at?.startsWith(today)).length
     );
 
-    const phoneSet = new Set();
-    let duplicates = 0;
-    (data || []).forEach((l) => {
-      const phone = l.phone?.trim();
-      if (phone && phoneSet.has(phone)) duplicates++;
-      else phoneSet.add(phone);
-    });
-    setDuplicateLeadsCount(duplicates);
+    setPendingLeadsCount(
+      (data || []).filter((l) => normalizeStatus(l.status) === 'new').length
+    );
+
+    setPendingFollowUpCount(
+      (data || []).filter((l) => {
+        const status = normalizeStatus(l.status);
+        const hasValidStatus = status !== 'new' && status !== 'closed won' && status !== 'closed lost';
+        const hasPastFollowUp = l.follow_up_date && new Date(l.follow_up_date) < new Date();
+        return hasValidStatus && hasPastFollowUp;
+      }).length
+    );
+
     setLoadingLeads(false);
   };
 
@@ -121,35 +129,65 @@ export default function Dashboard() {
         </TouchableOpacity>
       )}
 
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.push('All Leads', { filter: 'all' })}
+      >
         <Text style={styles.metricLabel}>📌 Total Leads</Text>
         <Text style={styles.metricValue}>{leads.length}</Text>
-      </View>
+        <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+          Tap to view all leads
+        </Text>
+      </TouchableOpacity>
 
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.push('All Leads', { filter: 'today' })}
+      >
         <Text style={styles.metricLabel}>📅 Today's New Leads</Text>
         <Text style={styles.metricValue}>{todayLeadsCount}</Text>
-      </View>
+        <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+          Tap to view today's leads
+        </Text>
+      </TouchableOpacity>
 
-      <View style={styles.card}>
-        <Text style={styles.metricLabel}>♻️ Duplicate Leads</Text>
-        <Text style={styles.metricValue}>{duplicateLeadsCount}</Text>
-      </View>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.push('All Leads', { filter: 'pending' })}
+      >
+        <Text style={styles.metricLabel}>⏳ Pending Leads</Text>
+        <Text style={styles.metricValue}>{pendingLeadsCount}</Text>
+        <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+          Tap to view pending leads
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.push('All Leads', { filter: 'pending_follow_up' })}
+      >
+        <Text style={styles.metricLabel}>📅 Pending Follow Up</Text>
+        <Text style={styles.metricValue}>{pendingFollowUpCount}</Text>
+        <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+          Tap to view leads needing follow-up
+        </Text>
+      </TouchableOpacity>
 
       {normalizedRole === 'manager' && (
         <>
           <Text style={styles.subheading}>🧩 Leads by Status</Text>
-          <View style={styles.cardGroup}>
-            <Text>🆕 New: {countByStatus('new')}</Text>
-            <Text>🚫 Not Connected: {countByStatus('not_connected')}</Text>
-            <Text>📞 Contacted: {countByStatus('contacted')}</Text>
-            <Text>📨 Purposed: {countByStatus('purposed')}</Text>
-            <Text>🤝 Interested: {countByStatus('interested')}</Text>
-            <Text>🗣 Discuss: {countByStatus('discuss')}</Text>
-            <Text>📍 Visit Soon: {countByStatus('visit_soon')}</Text>
-            <Text>🏠 Visited: {countByStatus('visited')}</Text>
-            <Text>✅ Closed: {countByStatus('closed')}</Text>
-            <Text>❌ Not Interested: {countByStatus('not_interested')}</Text>
+          <View style={styles.statusList}>
+            <Text style={styles.statusItem}>🆕 New: {countByStatus('new')}</Text>
+            <Text style={styles.statusItem}>🚫 Not Connected: {countByStatus('not_connected')}</Text>
+            <Text style={styles.statusItem}>📞 Contacted: {countByStatus('contacted')}</Text>
+            <Text style={styles.statusItem}>📨 Purposed: {countByStatus('purposed')}</Text>
+            <Text style={styles.statusItem}>🗣 Discuss: {countByStatus('discuss')}</Text>
+            <Text style={styles.statusItem}>🤝 Interested: {countByStatus('interested')}</Text>
+            <Text style={styles.statusItem}>📍 Visit Soon: {countByStatus('visit_soon')}</Text>
+            <Text style={styles.statusItem}>🏠 Visited: {countByStatus('visited')}</Text>
+            <Text style={styles.statusItem}>💼 Negotiation: {countByStatus('negotiation')}</Text>
+            <Text style={styles.statusItem}>✅ Closed Won: {countByStatus('closed won')}</Text>
+            <Text style={styles.statusItem}>❌ Closed Lost: {countByStatus('closed lost')}</Text>
           </View>
         </>
       )}
@@ -165,4 +203,6 @@ const styles = StyleSheet.create({
   cardGroup: { backgroundColor: '#f9f9f9', padding: 16, borderRadius: 10, gap: 6 },
   metricLabel: { fontSize: 16, color: '#555' },
   metricValue: { fontSize: 25, fontWeight: 'bold', color: '#333' },
+  statusList: { backgroundColor: '#f1f1f1', padding: 16, borderRadius: 10, marginBottom: 12 },
+  statusItem: { fontSize: 14, color: '#333', marginBottom: 8 },
 });

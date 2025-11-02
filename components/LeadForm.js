@@ -1,11 +1,12 @@
 import { supabase } from '../supabaseClient';
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet, Text, ActivityIndicator, ScrollView } from 'react-native';
+import { Appbar } from 'react-native-paper';
 import { useUser } from '../context/UserContext';
 import { Dropdown } from 'react-native-element-dropdown';
 import { uploadLeadsToSupabase } from '../utils/uploadLeadsToSupabase';
 
-export default function LeadForm() {
+export default function LeadForm({ navigation }) {
   const { profile } = useUser();
 
   // State for existing and new fields
@@ -30,7 +31,9 @@ export default function LeadForm() {
   }
 
   const role = (profile?.role || '').trim().toLowerCase();
-  const managerId = profile.manager_id;
+  // For managers, their own profile id is the manager id for their team
+  // For telecallers, their manager_id is the manager's id
+  const managerId = role === 'manager' ? profile.id : profile.manager_id;
 
   useEffect(() => {
     const fetchTelecallers = async () => {
@@ -82,6 +85,8 @@ export default function LeadForm() {
       // This logic correctly assigns to the selected telecaller for managers,
       // or to the telecaller themselves if they are logged in.
       assigned_to: role === 'manager' ? assignedTo : profile.id,
+      // For telecallers, also set the manager_id to their manager's id
+      ...(role === 'telecaller' && { manager_id: profile.manager_id }),
     };
 
     try {
@@ -109,8 +114,12 @@ export default function LeadForm() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>🚀 Add New Lead</Text>
+    <View style={styles.container}>
+      <Appbar.Header style={styles.appbar}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title="🚀 Add New Lead" />
+      </Appbar.Header>
+      <ScrollView style={styles.scrollContainer}>
 
       <TextInput
         style={styles.input}
@@ -189,14 +198,17 @@ export default function LeadForm() {
         </>
       )}
 
-      <Button title="Submit Lead" onPress={handleSubmit} />
-      <View style={{ height: 50 }} />
-    </ScrollView>
+        <Button title="Submit Lead" onPress={handleSubmit} />
+        <View style={{ height: 50 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 40 },
+  container: { flex: 1 },
+  appbar: { backgroundColor: '#6200ee' },
+  scrollContainer: { flex: 1, padding: 20, paddingTop: 40 },
   title: {
     fontSize: 22,
     fontWeight: 'bold',

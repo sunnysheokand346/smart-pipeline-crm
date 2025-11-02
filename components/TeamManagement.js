@@ -5,8 +5,8 @@ import { useUser } from '../context/UserContext';
 import { supabase } from '../supabaseClient';
 
 // Replace with your deployed serverless URL that performs the privileged removal/transfer.
-const SERVERLESS_REMOVE_URL = 'https://your-server.example.com/api/remove-telecaller';
-const SERVERLESS_TRANSFER_URL = 'https://your-server.example.com/api/transfer-leads';
+const SERVERLESS_REMOVE_URL = 'https://smart-pipeline-crm1.vercel.app/api/remove-telecaller';
+const SERVERLESS_TRANSFER_URL = 'https://smart-pipeline-crm1.vercel.app/api/transfer-leads';
 
 export default function TeamManagementScreen() {
   const { profile, loading, user } = useUser();
@@ -24,6 +24,7 @@ export default function TeamManagementScreen() {
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [isPasswordModalVisible, setPasswordModalVisible] = useState(false);
   const [isRemoveModalVisible, setRemoveModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState('remove'); // 'remove' or 'transfer'
   const [managerPassword, setManagerPassword] = useState('');
   const [confirmingRemove, setConfirmingRemove] = useState(false);
 
@@ -38,13 +39,44 @@ export default function TeamManagementScreen() {
     if (!teamMembers || teamMembers.length === 0) return;
     try {
       const telecallerIds = teamMembers.map((t) => t.id);
-      const { data, error } = await supabase.rpc('get_lead_counts_for_telecallers', { telecaller_ids: telecallerIds });
-      if (!error && data) {
-        const counts = data.reduce((acc, item) => {
-          acc[item.telecaller_id] = item.lead_count;
-          return acc;
-        }, {});
-        setLeadCounts(counts);
+      // Try RPC first (if available)
+      let rpcOk = false;
+      try {
+        const { data, error } = await supabase.rpc('get_lead_counts_for_telecallers', { telecaller_ids: telecallerIds });
+        if (!error && data && data.length > 0) {
+          const counts = data.reduce((acc, item) => { acc[item.telecaller_id] = item.lead_count; return acc; }, {});
+          setLeadCounts(counts);
+          rpcOk = true;
+        } else {
+          console.log('TeamManagement: rpc returned no data or error', { error });
+        }
+      } catch (rpcErr) {
+        console.warn('TeamManagement: rpc call failed', rpcErr?.message || rpcErr);
+      }
+
+      if (!rpcOk) {
+        // Fallback: query leads.assigned_to and count per telecaller
+        try {
+          const { data: leadsData, error: leadsError } = await supabase
+            .from('leads')
+            .select('assigned_to')
+            .in('assigned_to', telecallerIds);
+
+          if (!leadsError && leadsData) {
+            const counts = leadsData.reduce((acc, lead) => {
+              const id = lead.assigned_to;
+              if (!id) return acc;
+              acc[id] = (acc[id] || 0) + 1;
+              return acc;
+            }, {});
+            setLeadCounts(counts);
+            console.log('TeamManagement: fallback lead counts computed', { counts });
+          } else {
+            console.warn('TeamManagement: fallback leads query error', leadsError);
+          }
+        } catch (e) {
+          console.error('TeamManagement: fallback leads query threw', e?.message || e);
+        }
       }
     } catch (e) {
       console.error('Error fetching lead counts:', e?.message || e);
@@ -100,6 +132,14 @@ export default function TeamManagementScreen() {
       return;
     }
     setSelectedTelecaller(telecaller);
+    setModalMode('remove');
+    setRemoveModalVisible(true);
+  };
+
+  const openTransferModal = (telecaller) => {
+    // Open transfer modal even if user has leads.
+    setSelectedTelecaller(telecaller);
+    setModalMode('transfer');
     setRemoveModalVisible(true);
   };
 
@@ -196,37 +236,71 @@ export default function TeamManagementScreen() {
       Alert.alert('Error', 'Manager email not available for confirmation.');
       return;
     }
-    if (!managerPassword) {
-      Alert.alert('Error', 'Please enter your password to confirm.');
-      return;
-    }
 
     setConfirmingRemove(true);
     try {
-      // Call serverless transfer endpoint which should:
-      // - verify the manager's password securely server-side
-      // - verify the manager is allowed to act on this telecaller
-      // - transfer all leads assigned to telecallerId into the lead pool (telecaller_id = NULL)
-      const res = await fetch(SERVERLESS_TRANSFER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ managerId: user?.id, managerEmail: user?.email, managerPassword, telecallerId: selectedTelecaller?.id }),
-      });
+      // Branch by modal mode: transfer leads or remove user
+      if (modalMode === 'transfer') {
+        // Transfer all leads assigned to the telecaller to the lead pool (assigned_to = null)
+        const { error } = await supabase
+          .from('leads')
+          .update({ assigned_to: null })
+          .eq('assigned_to', selectedTelecaller.id);
 
-      const payload = await res.json();
-      if (!res.ok) {
-        console.warn('TeamManagement: confirmTransfer server error', payload);
-        Alert.alert('Transfer failed', payload?.message || 'Server refused to transfer leads.');
+        if (error) {
+          console.error('TeamManagement: transfer leads error', error);
+          Alert.alert('Transfer failed', `Failed to transfer leads: ${error.message}`);
+          setConfirmingRemove(false);
+          return;
+        }
+
+        // success
+        Alert.alert('Success', 'Leads transferred to lead pool.');
+        setManagerPassword('');
         setConfirmingRemove(false);
-        return;
-      }
+        setRemoveModalVisible(false);
+        fetchTeamMembers();
+      } else {
+        if (!managerPassword) {
+          Alert.alert('Error', 'Please enter your password to confirm.');
+          setConfirmingRemove(false);
+          return;
+        }
+        // Remove flow: call serverless remove endpoint which should delete the user using service_role key
+        try {
+          const res = await fetch(SERVERLESS_REMOVE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ managerId: user?.id, managerEmail: user?.email, managerPassword, telecallerId: selectedTelecaller?.id }),
+          });
 
-      // success
-      Alert.alert('Success', 'Leads transferred to lead pool.');
-      setManagerPassword('');
-      setConfirmingRemove(false);
-      setRemoveModalVisible(false);
-      fetchTeamMembers();
+          let payload;
+          try {
+            payload = await res.json();
+          } catch (parseErr) {
+            const text = await res.text().catch(() => null);
+            console.warn('TeamManagement: remove response not JSON', { status: res.status, text });
+            payload = { message: text || `Non-JSON response (status ${res.status})` };
+          }
+
+          if (!res.ok) {
+            console.warn('TeamManagement: confirmRemove server error', { status: res.status, payload });
+            Alert.alert('Remove failed', payload?.message || `Server refused to remove user (status ${res.status}).`);
+            setConfirmingRemove(false);
+            return;
+          }
+
+          Alert.alert('Success', 'User has been permanently removed.');
+          setManagerPassword('');
+          setConfirmingRemove(false);
+          setRemoveModalVisible(false);
+          fetchTeamMembers();
+        } catch (e) {
+          console.error('TeamManagement: confirmRemove unexpected error', e);
+          Alert.alert('Error', 'Unexpected error during remove operation.');
+          setConfirmingRemove(false);
+        }
+      }
     } catch (e) {
       console.error('TeamManagement: confirmTransfer unexpected error', e);
       Alert.alert('Error', 'Unexpected error during transfer.');
@@ -294,7 +368,7 @@ export default function TeamManagementScreen() {
           <Button
             mode="contained-tonal"
             icon="swap-horizontal"
-            onPress={() => openRemoveModal(item)}
+            onPress={() => openTransferModal(item)}
             disabled={(leadCounts[item.id] || 0) === 0}
             style={[(leadCounts[item.id] || 0) === 0 ? styles.disabledRemoveBtn : styles.transferBtn, styles.actionBtnBox]}
             labelStyle={[styles.actionLabel, (leadCounts[item.id] || 0) === 0 ? styles.disabledRemoveLabel : { color: '#fff' }]}
@@ -355,19 +429,34 @@ export default function TeamManagementScreen() {
           <Button mode="text" onPress={() => setPasswordModalVisible(false)}>Cancel</Button>
         </Modal>
 
-        {/* Remove Modal with manager password confirmation */}
+        {/* Modal for transfer or remove actions */}
         <Modal visible={isRemoveModalVisible} onDismiss={() => setRemoveModalVisible(false)} contentContainerStyle={styles.modal}>
-          <Title>Remove {selectedTelecaller?.name}?</Title>
-          <Text>This action is irreversible. The user's account and profile data will be permanently deleted.</Text>
-          <Text style={{ fontWeight: 'bold', marginVertical: 10 }}>All leads must be transferred before removal.</Text>
+          {modalMode === 'transfer' ? (
+            <>
+              <Title>Transfer leads for {selectedTelecaller?.name}?</Title>
+              <Text>This will move all leads assigned to this telecaller back to the unassigned lead pool.</Text>
+              <Text style={{ fontWeight: 'bold', marginVertical: 10 }}>This action can be undone by reassigning leads later.</Text>
 
-          <Text style={{ marginTop: 8, marginBottom: 6 }}>Enter your password to confirm:</Text>
-          <TextInput label="Your password" value={managerPassword} onChangeText={setManagerPassword} secureTextEntry style={styles.input} />
+              <Button mode="contained" onPress={confirmRemove} buttonColor="#17a2b8" style={{ marginTop: 10 }} loading={confirmingRemove} disabled={confirmingRemove}>
+                Transfer Leads
+              </Button>
+              <Button mode="text" onPress={() => { setRemoveModalVisible(false); setManagerPassword(''); }}>{'Cancel'}</Button>
+            </>
+          ) : (
+            <>
+              <Title>Remove {selectedTelecaller?.name}?</Title>
+              <Text>This action is irreversible. The user's account and profile data will be permanently deleted.</Text>
+              <Text style={{ fontWeight: 'bold', marginVertical: 10 }}>All leads must be transferred before removal.</Text>
 
-          <Button mode="contained" onPress={confirmRemove} buttonColor="red" style={{ marginTop: 10 }} loading={confirmingRemove} disabled={confirmingRemove || !managerPassword}>
-            Yes, Remove Permanently
-          </Button>
-          <Button mode="text" onPress={() => { setRemoveModalVisible(false); setManagerPassword(''); }}>{'Cancel'}</Button>
+              <Text style={{ marginTop: 8, marginBottom: 6 }}>Enter your password to confirm:</Text>
+              <TextInput label="Your password" value={managerPassword} onChangeText={setManagerPassword} secureTextEntry style={styles.input} />
+
+              <Button mode="contained" onPress={confirmRemove} buttonColor="red" style={{ marginTop: 10 }} loading={confirmingRemove} disabled={confirmingRemove || !managerPassword}>
+                Yes, Remove Permanently
+              </Button>
+              <Button mode="text" onPress={() => { setRemoveModalVisible(false); setManagerPassword(''); }}>{'Cancel'}</Button>
+            </>
+          )}
         </Modal>
       </Portal>
     </>

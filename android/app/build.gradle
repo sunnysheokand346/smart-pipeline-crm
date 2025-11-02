@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.snack7ad9735c20394d7c990f572e1e82e4bb'
+    namespace 'com.smartpipeline.crm'
     defaultConfig {
-        applicationId 'com.anonymous.snack7ad9735c20394d7c990f572e1e82e4bb'
+        applicationId 'com.smartpipeline.crm'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

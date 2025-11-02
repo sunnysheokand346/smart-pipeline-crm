@@ -8,6 +8,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTransientSignIn } from './utils/transientSignIn';
 
+// ✅ Notifications
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import NotificationService from './utils/NotificationService'; // ✅ Correct import
+
 import LeadForm from './components/LeadForm';
 import LeadList from './components/LeadList';
 import Dashboard from './components/Dashboard';
@@ -20,7 +25,7 @@ import UploadExcel from './components/UploadExcel';
 import DuplicateLeadsScreen from './components/DuplicateLeadsScreen';
 import ProfileScreen from './components/ProfileScreen';
 import TeamManagementScreen from './components/TeamManagement';
-
+import SupportScreen from './components/SupportScreen';
 import { UserProvider, useUser } from './context/UserContext';
 
 import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
@@ -32,6 +37,15 @@ const AD_UNIT_ID = Platform.select({
 });
 const interstitialAd = InterstitialAd.createForAdRequest(AD_UNIT_ID, {
   requestNonPersonalizedAdsOnly: true,
+});
+
+// ------------------- NOTIFICATION HANDLER -------------------
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
 });
 
 // ------------------- NAVIGATION -------------------
@@ -87,11 +101,21 @@ function AuthStack() {
 }
 
 function MainAppStack() {
+  const { profile } = useUser();
+  const isManager = (profile?.role || '').trim().toLowerCase() === 'manager';
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Drawer" component={DrawerNavigator} />
+      <Stack.Screen name="Dashboard" component={Dashboard} />
+      <Stack.Screen name="All Leads" component={LeadList} />
       <Stack.Screen name="Add Lead Form" component={LeadForm} />
       <Stack.Screen name="Upload Excel" component={UploadExcel} />
+      <Stack.Screen name="Leads Pool" component={LeadsPool} />
+      <Stack.Screen name="Add New Leads" component={AddLeadOptions} />
+      <Stack.Screen name="Manage Team" component={TeamManagementScreen} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }
@@ -105,25 +129,16 @@ function DrawerNavigator() {
       initialRouteName="Dashboard"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
+      <Drawer.Screen name="Dashboard" component={Dashboard} />
       <Drawer.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
           drawerLabelStyle: { color: '#D97706', fontWeight: 'bold' },
-          drawerItemStyle: {
-            backgroundColor: '#FFFBEB',
-            borderRadius: 8,
-            marginHorizontal: 10,
-            borderBottomWidth: 1,
-            borderBottomColor: '#ddd',
-            marginBottom: 10,
-          },
           drawerIcon: ({ size }) => <MaterialIcons name="account-circle" color="#D97706" size={size} />,
         }}
       />
-      <Drawer.Screen name="Dashboard" component={Dashboard} />
       {isManager && <Drawer.Screen name="Leads Pool" component={LeadsPool} />}
-      {isManager && <Drawer.Screen name="Duplicate Leads" component={DuplicateLeadsScreen} />}
       <Drawer.Screen
         name={isManager ? 'Add New Leads' : 'Add Lead'}
         component={isManager ? AddLeadOptions : LeadForm}
@@ -135,7 +150,8 @@ function DrawerNavigator() {
 }
 
 function CustomDrawerContent(props) {
-  const { logout } = useUser();
+  const { logout, profile } = useUser();
+  const isManager = (profile?.role || '').trim().toLowerCase() === 'manager';
 
   const handleLogout = async () => {
     try {
@@ -147,6 +163,10 @@ function CustomDrawerContent(props) {
     }
   };
 
+  const handleSupportTeam = () => {
+    props.navigation.navigate('Support');
+  };
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1, justifyContent: 'space-between' }}>
       <View>
@@ -154,6 +174,14 @@ function CustomDrawerContent(props) {
       </View>
 
       <View style={{ paddingVertical: 10 }}>
+        {isManager && (
+          <DrawerItem
+            label="Support Team"
+            onPress={handleSupportTeam}
+            icon={({ size }) => <MaterialIcons name="support" color="#007bff" size={size} />}
+            style={{ marginHorizontal: 10, borderRadius: 8, marginBottom: 10 }}
+          />
+        )}
         <DrawerItem
           label="Logout"
           labelStyle={{ color: 'red', fontWeight: 'bold' }}
@@ -169,8 +197,26 @@ function CustomDrawerContent(props) {
 export default function App() {
   const [adLoaded, setAdLoaded] = useState(false);
 
+  // ✅ Initialize Push Notifications
   useEffect(() => {
-    // Ad listeners
+    NotificationService.initialize(); // register + permission + token
+
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+      console.log('📩 Notification Received:', notification);
+    });
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log('📨 Notification Clicked:', response);
+    });
+
+    return () => {
+      subscription.remove();
+      responseSubscription.remove();
+    };
+  }, []);
+
+  // ------------------- Ad Logic -------------------
+  useEffect(() => {
     const loadedListener = interstitialAd.addAdEventListener(AdEventType.LOADED, () => setAdLoaded(true));
     const closedListener = interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
@@ -178,10 +224,9 @@ export default function App() {
     });
     const errorListener = interstitialAd.addAdEventListener(AdEventType.ERROR, () => setAdLoaded(false));
 
-    // Initial load
     interstitialAd.load();
 
-    // 1-minute global ad timer
+    // Show ad every 20 minutes
     const interval = setInterval(() => {
       if (adLoaded) {
         interstitialAd.show();

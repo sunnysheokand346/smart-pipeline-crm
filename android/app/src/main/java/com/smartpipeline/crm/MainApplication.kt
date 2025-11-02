@@ -1,4 +1,4 @@
-package com.anonymous.snack7ad9735c20394d7c990f572e1e82e4bb
+package com.smartpipeline.crm
 
 import android.app.Application
 import android.content.res.Configuration

@@ -35,7 +35,8 @@ export const uploadLeadsToSupabase = async (leads = []) => {
       'assigned_to',
       'created_at',
       'times_generated',
-      'id'
+      'id',
+      'notes'         // ✅ Add notes to fixed keys
     ];
     const customFields = {};
 
@@ -58,6 +59,7 @@ export const uploadLeadsToSupabase = async (leads = []) => {
       assigned_to: lead.assigned_to || null,
       created_at: new Date().toISOString(),
       times_generated: 1,
+      notes: lead.notes?.trim() || null,  // ✅ Add notes field
       custom_fields: Object.keys(customFields).length > 0 ? customFields : null
     };
 
