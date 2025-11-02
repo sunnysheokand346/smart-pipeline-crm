@@ -1,76 +1,76 @@
 {
-  "expo": {
-    "name": "Smart Pipeline CRM",
-    "slug": "smart-pipeline-crm",
-    "version": "2.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "jsEngine": "hermes",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#00346a"
-    },
-    "updates": {
-      "enabled": true,
-      "fallbackToCacheTimeout": 0
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#00346a"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.smartpipeline.crm",
-      "versionCode": 2,
-      "permissions": [
-        "NOTIFICATIONS"
-      ]
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "web": {
-      "favicon": "./assets/icon.png"
-    },
-    "plugins": [
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
-        }
-      ],
-      "expo-asset",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#00346a",
-          "androidMode": "default",
-          "androidCollapsedTitle": "Smart Pipeline CRM",
-          "sounds": [
-            "./assets/notificationtone.mp3"
-          ]
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "targetSdkVersion": 35,
-            "compileSdkVersion": 35,
-            "androidGradlePlugin": "8.3.2"
-          }
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "a7939a3c-2733-4bcf-b014-6c17ec0e3e1b"
-      }
-    }
-  }
+"expo": {
+"name": "Smart Pipeline CRM",
+"slug": "smart-pipeline-crm",
+"version": "2.0.0",
+"orientation": "portrait",
+"icon": "./assets/icon.png",
+"userInterfaceStyle": "light",
+"jsEngine": "hermes",
+"newArchEnabled": true,
+"splash": {
+"image": "./assets/splash-icon.png",
+"resizeMode": "contain",
+"backgroundColor": "#00346a"
+},
+"updates": {
+"enabled": true,
+"fallbackToCacheTimeout": 0
+},
+"android": {
+"adaptiveIcon": {
+"foregroundImage": "./assets/icon.png",
+"backgroundColor": "#00346a"
+},
+"edgeToEdgeEnabled": true,
+"package": "com.smartpipeline.crm",
+"versionCode": 2,
+"permissions": [
+"NOTIFICATIONS"
+]
+},
+"ios": {
+"supportsTablet": true
+},
+"web": {
+"favicon": "./assets/icon.png"
+},
+"plugins": [
+[
+"react-native-google-mobile-ads",
+{
+"androidAppId": "ca-app-pub-3940256099942544~3347511713",
+"iosAppId": "ca-app-pub-3940256099942544~1458002511"
+}
+],
+"expo-asset",
+[
+"expo-notifications",
+{
+"icon": "./assets/icon.png",
+"color": "#00346a",
+"androidMode": "default",
+"androidCollapsedTitle": "Smart Pipeline CRM",
+"sounds": [
+"./assets/notificationtone.mp3"
+]
+}
+],
+[
+"expo-build-properties",
+{
+"android": {
+"targetSdkVersion": 35,
+"compileSdkVersion": 35,
+"androidGradlePlugin": "8.1.4"
+}
+}
+]
+],
+"extra": {
+"eas": {
+"projectId": "a7939a3c-2733-4bcf-b014-6c17ec0e3e1b"
+}
+}
+}
 }
