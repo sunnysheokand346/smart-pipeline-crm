@@ -13,11 +13,15 @@
     },
     "production": {
       "autoIncrement": true,
-      "distribution": "store"
+      "distribution": "store",
+      "android": {
+        "image": "ubuntu-20.04-android-ndk-r23b"
+      }
     },
     "apk_test": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "ubuntu-20.04-android-ndk-r23b"
       },
       "distribution": "internal",
       "autoIncrement": true
