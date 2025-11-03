@@ -64,8 +64,7 @@
             "compileSdkVersion": 34,
             "androidGradlePlugin": "8.1.4",
             "kotlinVersion": "1.9.0"
-          },
-          "gradleCommand": "./gradlew build"
+          }
         }
       ]
     ],
@@ -76,3 +75,4 @@
     }
   }
 }
+

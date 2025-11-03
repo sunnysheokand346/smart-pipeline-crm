@@ -13,15 +13,11 @@
     },
     "production": {
       "autoIncrement": true,
-      "distribution": "store",
-      "android": {
-        "image": "ubuntu-22.04-jdk-17-ndk-r26b"
-      }
+      "distribution": "store"
     },
     "apk_test": {
       "android": {
-        "buildType": "apk",
-        "image": "ubuntu-22.04-jdk-17-ndk-r26b"
+        "buildType": "apk"
       },
       "distribution": "internal",
       "autoIncrement": true
