@@ -15,13 +15,13 @@
       "autoIncrement": true,
       "distribution": "store",
       "android": {
-        "image": "ubuntu-20.04-jdk-11-ndk-r23b"
+        "image": "ubuntu-22.04-jdk-17-ndk-r26b"
       }
     },
     "apk_test": {
       "android": {
         "buildType": "apk",
-        "image": "ubuntu-20.04-jdk-11-ndk-r23b"
+        "image": "ubuntu-22.04-jdk-17-ndk-r26b"
       },
       "distribution": "internal",
       "autoIncrement": true
@@ -31,3 +31,4 @@
     "production": {}
   }
 }
+
