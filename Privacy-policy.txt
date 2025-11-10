@@ -1,0 +1,91 @@
+Privacy Policy for Smart Pipeline CRM
+
+Effective Date: November 10, 2025
+
+This Privacy Policy describes how Smart Pipeline CRM collects, uses, and discloses information from users of the Smart Pipeline CRM mobile application.
+
+1. Information We Collect
+
+Because Smart Pipeline CRM is a business-focused CRM (Customer Relationship Management) tool, the data we collect is primarily the Customer Data you input and the User Data necessary for the App to function.
+
+A. Customer Data (Data You Provide)
+
+This is the data that is stored and processed by the App on behalf of your business, and it is considered highly sensitive.
+
+Customer Contact Information: Names, email addresses, phone numbers, and physical addresses of your business clients and leads.
+
+Pipeline Data: Notes, deal stages, financial values, and history related to sales opportunities.
+
+Internal Communications: Any notes, tasks, or follow-ups created within the App related to customer records.
+
+B. User Data (Data We Collect Automatically)
+
+This information relates to the user (the individual employee) operating the App.
+
+Authentication Data: User ID, email, and password (securely hashed) required to log into your organization's CRM account.
+
+Device Information: Device type, operating system version, and unique device identifiers (for security and debugging).
+
+Usage Data: Information on how you interact with the App, such as features used and the frequency of use.
+
+2. How We Use Your Information
+
+We use the collected information for the following purposes:
+
+Service Provision: To operate, maintain, and provide the core functions of the Smart Pipeline CRM service, allowing you to manage your sales pipeline and customer data.
+
+Authentication and Security: To verify your identity, maintain account security, and prevent fraud.
+
+Improvement and Development: To understand usage trends, debug errors, and improve the performance and features of the App.
+
+Customer Support: To respond to your requests for technical support or service inquiries.
+
+3. Storage and Data Security
+
+Data Storage: Customer Data is stored securely on servers provided by Supabase. We use industry-standard security practices, including encryption and access controls, to protect your data.
+
+Encryption: All data transmitted between the App and our servers is encrypted using Secure Socket Layer (SSL) technology.
+
+Responsibility: While we strive to use commercially acceptable means to protect your data, no method of transmission over the internet or method of electronic storage is 100% secure.
+
+4. Disclosure of Information
+
+We do not sell, trade, or otherwise transfer your Customer Data to outside parties. We may disclose your data only in the following limited circumstances:
+
+With Your Consent: If you explicitly authorize the disclosure.
+
+Service Providers: We may share User Data (non-Customer data) with trusted third-party service providers, such as Githubcopilot, Gemini, Chatgpt, to assist us in operating the App, conducting our business, or serving our users, so long as those parties agree to keep this information confidential.
+
+Legal Compliance: If required by law or in response to valid requests by public authorities.
+
+5. Third-Party Services
+
+The App may use third-party services that have their own privacy policies. We encourage you to review their policies:
+
+Analytics: ChatGpt, Gemini, Github Copilot.
+
+Link to their Privacy Policy: https://openai.com/policies/privacy-policy/
+
+Link to their Privacy Policy: https://support.google.com/gemini/answer/13594961?hl=en
+
+Link to their Privacy Policy: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
+
+Cloud Storage: www.supabase.com
+
+Link to their Privacy Policy: https://supabase.com/privacy
+
+6. Children's Privacy
+
+The Smart Pipeline CRM App is intended for a general business audience and does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13.
+
+7. Changes to This Privacy Policy
+
+We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy within the App or on this page. You are advised to review this Privacy Policy periodically for any changes.
+
+8. Contact Us
+
+If you have any questions about this Privacy Policy, please contact us at:
+
+Email: care.smartpipeline@gmail.com
+
+Contact Number: +91 9992199822
